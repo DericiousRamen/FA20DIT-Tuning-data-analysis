@@ -80,7 +80,7 @@ def CL_MAF_calibration(AF_learning, AF_corr, MAF_Corr, MAF_V, calc_load, CL_Sw, 
     axs[1,1].plot(offsets[:,0],offsets[:,1])
     axs[1,1].set(xlabel='MAF Voltage', ylabel = 'offset (%)')
     axs[1,1].set_title("Desired Offsets")
-    plt.show()
+    plt.show(block = False)
 
     return offsets
 #compute open loop calibrations
@@ -135,7 +135,7 @@ def OL_MAF_calibration(AFR, comm_AFR, MAF_Corr, MAF_V):
     #axs[1,1].set_title('AFR comparison')
     #axs[1,1].legend()
     #axs[1,1].set(xlabel = 'time', ylabel = 'AFR')
-    plt.show()
+    plt.show(block = False)
 
     return avg_offsets
 def MAF_calibration_interp(AF_learning, AF_corr, offsets, avg_offsets,CL_Sw):
@@ -153,18 +153,18 @@ def MAF_calibration_interp(AF_learning, AF_corr, offsets, avg_offsets,CL_Sw):
     y1 = np.polyval(p1,x)
     y2 = np.polyval(p2,x)
     y3 = in_CL_per*y1 + (1-in_CL_per)*y2
-
-    plt.plot(x, y1,label = 'Closed Loop Polyfit')
-    plt.plot(x,y2, label = 'Open Loop Polyfit')
-    plt.plot(x,y3, label = 'Average Polyfit')
-    plt.plot(offsets[:,0], offsets[:,1], label = 'Closed Loop Data')
-    plt.plot(avg_offsets[:,0], avg_offsets[:,1], label = 'Open Loop Data')
-    plt.xlabel('MAF Voltage(V)')
-    plt.ylabel('Desired (%) change')
-    plt.legend()
-    plt.title('Combined desired MAF (%) change')
-    plt.grid()
-    plt.show()
+    fig, axs = plt.subplots(1,1)
+    axs.plot(x, y1,label = 'Closed Loop Polyfit')
+    axs.plot(x,y2, label = 'Open Loop Polyfit')
+    axs.plot(x,y3, label = 'Average Polyfit')
+    axs.plot(offsets[:,0], offsets[:,1], label = 'Closed Loop Data')
+    axs.plot(avg_offsets[:,0], avg_offsets[:,1], label = 'Open Loop Data')
+    axs.set_xlabel('MAF Voltage(V)')
+    axs.set_ylabel('Desired (%) change')
+    axs.legend()
+    axs.set_title('Combined desired MAF (%) change')
+    axs.grid()
+    plt.show(block = False)
 def fuel_trim_distribution(AF_learning, AF_corr):
     trim = AF_learning + AF_corr
     trim = np.sort(trim) #sort the combined trims
@@ -190,27 +190,28 @@ def fuel_trim_distribution(AF_learning, AF_corr):
     var = np.sqrt(var)
     #plt.plot(AF_learning, label = "AF Learning (%)")
     #plt.plot(AF_corr, label = "AF Correction (%)")
-
-    plt.bar(values, freqs)
-    plt.bar(avg,[5000], color = 'red', label = 'Mean',width = .3)
-    plt.bar([avg-var, avg+var], [500,500], color = 'green', label = 'variance',width = .3)
-    plt.bar([avg-2*var, avg+2*var], [300,300], color = 'orange', label = '2*variance',width = .3)
-    plt.bar([avg-3*var, avg+3*var], [200,200], color = 'pink', label = '3*variance',width = .3)
-    plt.legend()
-    plt.xlabel('Correction (%)')
-    plt.ylabel('Frequency')
-    plt.title("Distribution of combined fuel trim")
-    plt.show()
+    fig, axs = plt.subplots(1,1)
+    axs.bar(values, freqs)
+    axs.bar(avg,[5000], color = 'red', label = 'Mean',width = .3)
+    axs.bar([avg-var, avg+var], [500,500], color = 'green', label = 'variance',width = .3)
+    axs.bar([avg-2*var, avg+2*var], [300,300], color = 'orange', label = '2*variance',width = .3)
+    axs.bar([avg-3*var, avg+3*var], [200,200], color = 'pink', label = '3*variance',width = .3)
+    axs.legend()
+    axs.set_xlabel('Correction (%)')
+    axs.set_ylabel('Frequency')
+    axs.set_title("Distribution of combined fuel trim")
+    plt.show(block = False)
 def knock_3d(fb_knock, gear, RPM , load, DAM):
+
 
     locs = np.where(fb_knock < -2.) #large signal relative
     loc_DAM = np.where(DAM < 1.) #also want to find where DAM is low triggered
 
     locs_DAM_filtered = []
     for loc in np.array(loc_DAM[0]): #need to do this weird filter to DAM
-
         if DAM[loc-1] > DAM[loc]: #DAM drop
             locs_DAM_filtered.append((range(loc-10,loc+10)))#take some frame
+
     locs_DAM_filtered = np.array(locs_DAM_filtered)
     locs = np.append(locs, locs_DAM_filtered)
     fb_knock = fb_knock[locs]
@@ -247,11 +248,9 @@ def knock_3d(fb_knock, gear, RPM , load, DAM):
             sorted_knock.append(fb_knock[locs])
             sorted_rpm.append(RPM[locs])
             sorted_load.append(load[locs])
-
-        fig = plt.figure()
+            fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-
-        #better plotting routine!!
+            #better plotting routine!!
         for i in range(6):
             ax.scatter(xs= sorted_rpm[i], ys = sorted_load[i], zs = sorted_knock[i], s = 4, color = color(i))
 
@@ -259,4 +258,4 @@ def knock_3d(fb_knock, gear, RPM , load, DAM):
         ax.set_ylabel('Calculated Load (g/rev)')
         ax.set_zlabel('Feedback Knock')
         plt.title('Knock vs RPM and Load')
-        plt.show()
+        plt.show(block = False)
