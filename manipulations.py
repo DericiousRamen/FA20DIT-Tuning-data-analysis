@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+import pickle
 
 #computes and displays relevant MAF correction given the input data
 def CL_MAF_calibration(AF_learning, AF_corr, MAF_Corr, MAF_V, calc_load, CL_Sw, AFR, comm_AFR, CL_AFR):
@@ -80,8 +80,10 @@ def CL_MAF_calibration(AF_learning, AF_corr, MAF_Corr, MAF_V, calc_load, CL_Sw, 
     axs[1,1].plot(offsets[:,0],offsets[:,1])
     axs[1,1].set(xlabel='MAF Voltage', ylabel = 'offset (%)')
     axs[1,1].set_title("Desired Offsets")
-    plt.show(block = False)
-
+    with open('CL_maf.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
     return offsets
 #compute open loop calibrations
 def OL_MAF_calibration(AFR, comm_AFR, MAF_Corr, MAF_V):
@@ -135,8 +137,11 @@ def OL_MAF_calibration(AFR, comm_AFR, MAF_Corr, MAF_V):
     #axs[1,1].set_title('AFR comparison')
     #axs[1,1].legend()
     #axs[1,1].set(xlabel = 'time', ylabel = 'AFR')
-    plt.show(block = False)
-
+    #plt.show(block = False)
+    with open('OL_maf.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
     return avg_offsets
 def MAF_calibration_interp(AF_learning, AF_corr, offsets, avg_offsets,CL_Sw):
     p1 = np.polyfit(offsets[:,0], offsets[:,1],3)
@@ -164,7 +169,12 @@ def MAF_calibration_interp(AF_learning, AF_corr, offsets, avg_offsets,CL_Sw):
     axs.legend()
     axs.set_title('Combined desired MAF (%) change')
     axs.grid()
-    plt.show(block = False)
+    with open('MAF_corr.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    #plt.show(block = False)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
+
 def fuel_trim_distribution(AF_learning, AF_corr):
     trim = AF_learning + AF_corr
     trim = np.sort(trim) #sort the combined trims
@@ -200,7 +210,12 @@ def fuel_trim_distribution(AF_learning, AF_corr):
     axs.set_xlabel('Correction (%)')
     axs.set_ylabel('Frequency')
     axs.set_title("Distribution of combined fuel trim")
-    plt.show(block = False)
+    with open('fuel_dist.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    #plt.show(block = False)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
+
 def knock_3d(fb_knock, gear, RPM , load, DAM):
 
 
@@ -211,6 +226,10 @@ def knock_3d(fb_knock, gear, RPM , load, DAM):
     for loc in np.array(loc_DAM[0]): #need to do this weird filter to DAM
         if DAM[loc-1] > DAM[loc]: #DAM drop
             locs_DAM_filtered.append((range(loc-10,loc+10)))#take some frame
+
+
+    #there is some bug where if there is no knock, then this program crashes.....
+    #i'm not quite sure what is causing this problem, well fuck
 
     locs_DAM_filtered = np.array(locs_DAM_filtered)
     locs = np.append(locs, locs_DAM_filtered)
@@ -248,7 +267,7 @@ def knock_3d(fb_knock, gear, RPM , load, DAM):
             sorted_knock.append(fb_knock[locs])
             sorted_rpm.append(RPM[locs])
             sorted_load.append(load[locs])
-            fig = plt.figure()
+        fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
             #better plotting routine!!
         for i in range(6):
@@ -258,4 +277,8 @@ def knock_3d(fb_knock, gear, RPM , load, DAM):
         ax.set_ylabel('Calculated Load (g/rev)')
         ax.set_zlabel('Feedback Knock')
         plt.title('Knock vs RPM and Load')
-        plt.show(block = False)
+        with open('knock.pkl','wb') as fid:
+            pickle.dump(ax, fid)
+        #plt.show(block = False)
+        plt.cla()   # Clear axis
+        plt.clf()   # Clear figure
