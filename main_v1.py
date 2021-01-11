@@ -23,7 +23,7 @@ import manipulations
 import pyglet
 import pickle
 import time
-import threading
+
 
  #stuff for creating and interactive gui. Mihgt not need threading
 
@@ -37,7 +37,7 @@ for file in glob.glob("*.csv"):
     filenames.append(file)
 
 #now there are going to be different types of log files
-os.system('del  *.pkl')
+os.system('del *.pkl')
 logs = []
 #get rid of this thing
 for file in filenames:
@@ -113,17 +113,9 @@ offset_OL  = manipulations.OL_MAF_calibration(AFR_OL,comm_AFR_OL, MAF_Corr_OL, M
 manipulations.MAF_calibration_interp(AF_learning, AF_corr,offset_CL, offset_OL,CL_Sw)
 manipulations.fuel_trim_distribution(AF_learning, AF_corr)
 manipulations.knock_3d(fb_knock, gear, RPM, load,DAM)
-fig_CL_show = False
-fig_OL_show = False
-fig_cal_show = False
-fig_fuel_show = False
-fig_knock_show = False
-running = True
+
 def update_gui():
-    global AFR_CL, comm_AFR_CL, MAF_Corr_CL, MAF_V_CL
-    global calc_load_CL, AF_learning_CL, AF_corr_CL, CL_AFR_CL
-    global AFR_OL, comm_AFR_OL, MAF_Corr_OL, MAF_V_OL
-    global fig_CL_show, fig_OL_show, fig_cal_show, fig_fuel_show, fig_knock_show
+
     global window_height, window_width, button_pos,button_width, button_height
     global running
     window_width = 600
@@ -173,15 +165,12 @@ def update_gui():
 
     @window.event
     def on_key_press(symbol, modifiers):
-        global running
         if symbol == pyglet.window.key.O:
-            running = False
             pyglet.app.exit()
 
     @window.event
     def on_mouse_press(x,y,button,modifiers):
         global window_height, window_width, button_pos,button_width, button_height
-        global fig_CL_show, fig_OL_show, fig_cal_show, fig_fuel_show, fig_knock_show
         bounds = []
         for pos in button_pos:#find the bounds of the buttons, should move this to improve efficiency
             xbounds = []
@@ -202,77 +191,46 @@ def update_gui():
                 if i == 0:
                     #CL plots
                     #need to use threading
-                    fig_CL_show = True
+                    with open('CL_maf.pkl','rb') as fid:
+                        ax = pickle.load(fid)
+                    plt.show()
+                    print('print figure')
                 elif i==1:
-                    fig_OL_show = True
+                    with open('OL_maf.pkl','rb') as fid:
+                        ax = pickle.load(fid)
+                    plt.show()
+                    print('print figure')
                 elif i ==2:
                     #this shoudn't work
-                    fig_cal_show = True
+                    with open('MAF_corr.pkl','rb') as fid:
+                        ax = pickle.load(fid)
+                    plt.show()
+                    print('print figure')
                 elif i == 3:
-                    fig_fuel_show = True
+                    with open('fuel_dist.pkl','rb') as fid:
+                        ax = pickle.load(fid)
+                    plt.show()
+                    print('print figure')
                 elif i == 4:
-                    fig_knock_show= True
+                    with open('knock.pkl','rb') as fid:
+                        ax = pickle.load(fid)
+                    plt.show()
+                    print('print figure')
 
     def update(dt):
-        global fig_CL_show, fig_OL_show, fig_cal_show, fig_fuel_show, fig_knock_show
         global running
 
-    pyglet.clock.schedule_interval(update, 1/10.)
+    pyglet.clock.schedule_interval(update, 1/30.)
     pyglet.app.run()
 
-def show_figs():
-    global fig_CL_show, fig_OL_show, fig_cal_show, fig_fuel_show, fig_knock_show
-    global fig_CL, fig_OL, fig_cal, fig_fuel, fig_knock
-    global running
 
-    while 1:
-        time.sleep(.5)
-        if fig_CL_show == True:
-            with open('CL_maf.pkl','rb') as fid:
-                ax = pickle.load(fid)
-            plt.show()
-            print('printing figure')
-            fig_CL_show = False
-        if fig_OL_show == True:
-            with open('OL_maf.pkl','rb') as fid:
-                ax = pickle.load(fid)
-            plt.show()
-            print('printing figure')
-            fig_OL_show = False
-        if fig_cal_show == True:
-            with open('MAF_corr.pkl','rb') as fid:
-                ax = pickle.load(fid)
-            plt.show()
-            print('printing figure')
-            fig_cal_show = False
-        if fig_fuel_show == True:
-            with open('fuel_dist.pkl','rb') as fid:
-                ax = pickle.load(fid)
-            plt.show()
-            print('printing figure')
-            fig_fuel_show = False
-        if fig_knock_show == True:
-            with open('knock.pkl','rb') as fid:
-                ax = pickle.load(fid)
-            plt.show()
-            print('printing figure')
-            fig_knock_show= False
-        if running == False:
-            break
 
-#plotting_thread = threading.Thread(target = show_figs, args = ())
-if __name__ == '__main__':
-    plt.close('all')
-    print('press o to exit gui')
-    graphics_thread = threading.Thread(target = update_gui, args = ())
-    #plotting_thread.start()
-    graphics_thread.start()
-    print('started graphics thread')
-    show_figs()
-    print('started plotting  thread')
-    #update_gui()
+plt.close('all')
+print('press o to exit gui')
+print('started graphics ')
+update_gui()
 
-    graphics_thread.join()
+
 #plotting_thread.join()
 #this launches all the data manipulations
 #offset_CL = manipulations.CL_MAF_calibration(AF_learning = AF_learning_CL, AF_corr = AF_corr_CL, MAF_Corr = MAF_Corr_CL,MAF_V =  MAF_V_CL,calc_load = calc_load_CL, CL_Sw = CL_Sw, AFR = AFR_CL, comm_AFR = comm_AFR_CL,CL_AFR =  CL_AFR_CL)
