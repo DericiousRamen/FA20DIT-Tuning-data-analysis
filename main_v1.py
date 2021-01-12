@@ -26,83 +26,91 @@ import time
 
 
  #stuff for creating and interactive gui. Mihgt not need threading
+#data initialization
+def init():
+    global logfile
+    global AF_learning, AF_corr, MAF_Corr, MAF_V, calc_load, CL_Sw, AFR, comm_AFR, CL_AFR, fb_knock, gear, RPM, load, DAM
+    global AFR_CL, comm_AFR_CL, MAF_Corr_CL, MAF_V_CL, calc_load_CL, AF_learning_CL, AF_corr_CL, CL_AFR_CL, AFR_OL, comm_AFR_OL, MAF_Corr_OL, MAF_V_OL
+    #get logfile name --> import file
+    filenames = []
+    #make array of dataframes
+    for file in glob.glob("*.csv"):
+        filenames.append(file)
+
+    #now there are going to be different types of log files
+    os.system('del *.pkl')
+    logs = []
+    #get rid of this thing
+    for file in filenames:
+        temp = pd.DataFrame(pd.read_csv(file, sep = ',', header = 0))
+
+        logs.append(temp)
+
+    #now we have two seperate lists, time to sort them into two seperate dataframes
+    logfile = pd.concat(logs, ignore_index = True)          #--> without CL fueling switch
+
+    #prune data to get only what is during warm engine operation
+    oil_temp_cutoff = 180.0 #arbitary cutoff, could go higher
+
+    oil_temp = logfile["Oil Temp (F)"].to_numpy()
+
+    invalid_temp_locs = np.where(oil_temp < oil_temp_cutoff)
+
+    logfile.drop(invalid_temp_locs[0], axis = 0,inplace = True)
+
+    t = (len(logfile))*(1/15)#approximate dt
+    if t > 60:
+        print('logs represent approximately', t/60,' minutes')
+    else:
+        print('logs represent approximately ',t,' seconds' )
+
+    #list of desired parameters
+    desired_params = ["AF Learning 1 (%)", "AF Correction 1 (%)", "MAF Corr (g/s)", "MAF Volts (V)"]
+    params = logfile.columns.values.tolist()
+
+    for param in desired_params:
+        #check if in list
+        if not (param in params):
+            print(param+" is not in current logfile")
+    AF_learning = logfile["AF Learning 1 (%)"].to_numpy()
+    AF_corr = logfile["AF Correction 1 (%)"].to_numpy()
+    MAF_Corr = logfile["MAF Corr (g/s)"].to_numpy()
+    MAF_V = logfile["MAF Volts (V)"].to_numpy()
+    calc_load = logfile["Calculated Load (g/rev)"].to_numpy()
+    CL_Sw = logfile["Closed Loop Sw (on/off)"].to_numpy() #this should contain strings
+    AFR = logfile["AF Sens 1 Ratio (AFR)"].to_numpy()
+    comm_AFR = logfile["Comm Fuel Final (AFR)"].to_numpy()
+    CL_AFR = logfile["CL Fuel Target (AFR)"].to_numpy()
+    fb_knock = logfile["Feedback Knock (�)"].to_numpy()
+    gear = logfile["Gear Position (Gear)"].to_numpy()
+    RPM = logfile["RPM (RPM)"].to_numpy()
+    load = logfile["Calculated Load (g/rev)"].to_numpy()
+    DAM = logfile["Dyn Adv Mult (DAM)"].to_numpy()
+
+    #initialize CL data
+    locs = np.where(CL_Sw == 'on')
+    AFR_CL= AFR[locs]
+    comm_AFR_CL =comm_AFR[locs]
+    MAF_Corr_CL = MAF_Corr[locs]
+    MAF_V_CL= MAF_V[locs]
+    calc_load_CL = calc_load[locs]
+    AF_learning_CL = AF_learning[locs]
+    AF_corr_CL = AF_corr[locs]
+    CL_AFR_CL = CL_AFR[locs]
+    #initialize OL data
+    locs = np.where(CL_Sw == 'off')
+    AFR_OL = AFR[locs]
+    comm_AFR_OL = comm_AFR[locs]
+    MAF_Corr_OL = MAF_Corr[locs]
+    MAF_V_OL = MAF_V[locs]
 
 #need two threads for plotting/processing and managing gui
+global logfile
+global AF_learning, AF_corr, MAF_Corr, MAF_V, calc_load, CL_Sw, AFR, comm_AFR, CL_AFR, fb_knock, gear, RPM, load, DAM
+global AFR_CL, comm_AFR_CL, MAF_Corr_CL, MAF_V_CL, calc_load_CL, AF_learning_CL, AF_corr_CL, CL_AFR_CL, AFR_OL, comm_AFR_OL, MAF_Corr_OL, MAF_V_OL
 
 
-#get logfile name --> import file
-filenames = []
-#make array of dataframes
-for file in glob.glob("*.csv"):
-    filenames.append(file)
-
-#now there are going to be different types of log files
-os.system('del *.pkl')
-logs = []
-#get rid of this thing
-for file in filenames:
-    temp = pd.DataFrame(pd.read_csv(file, sep = ',', header = 0))
-
-    logs.append(temp)
-
-#now we have two seperate lists, time to sort them into two seperate dataframes
-logfile = pd.concat(logs, ignore_index = True)          #--> without CL fueling switch
-
-#prune data to get only what is during warm engine operation
-oil_temp_cutoff = 180.0 #arbitary cutoff, could go higher
-
-oil_temp = logfile["Oil Temp (F)"].to_numpy()
-
-invalid_temp_locs = np.where(oil_temp < oil_temp_cutoff)
-
-logfile.drop(invalid_temp_locs[0], axis = 0,inplace = True)
-
-t = (len(logfile))*(1/15)#approximate dt
-if t > 60:
-    print('logs represent approximately', t/60,' minutes')
-else:
-    print('logs represent approximately ',t,' seconds' )
-
-#list of desired parameters
-desired_params = ["AF Learning 1 (%)", "AF Correction 1 (%)", "MAF Corr (g/s)", "MAF Volts (V)"]
-params = logfile.columns.values.tolist()
-
-for param in desired_params:
-    #check if in list
-    if not (param in params):
-        print(param+" is not in current logfile")
-
-AF_learning = logfile["AF Learning 1 (%)"].to_numpy()
-AF_corr = logfile["AF Correction 1 (%)"].to_numpy()
-MAF_Corr = logfile["MAF Corr (g/s)"].to_numpy()
-MAF_V = logfile["MAF Volts (V)"].to_numpy()
-calc_load = logfile["Calculated Load (g/rev)"].to_numpy()
-CL_Sw = logfile["Closed Loop Sw (on/off)"].to_numpy() #this should contain strings
-AFR = logfile["AF Sens 1 Ratio (AFR)"].to_numpy()
-comm_AFR = logfile["Comm Fuel Final (AFR)"].to_numpy()
-CL_AFR = logfile["CL Fuel Target (AFR)"].to_numpy()
-fb_knock = logfile["Feedback Knock (�)"].to_numpy()
-gear = logfile["Gear Position (Gear)"].to_numpy()
-RPM = logfile["RPM (RPM)"].to_numpy()
-load = logfile["Calculated Load (g/rev)"].to_numpy()
-DAM = logfile["Dyn Adv Mult (DAM)"].to_numpy()
-
-#initialize CL data
-locs = np.where(CL_Sw == 'on')
-AFR_CL= AFR[locs]
-comm_AFR_CL =comm_AFR[locs]
-MAF_Corr_CL = MAF_Corr[locs]
-MAF_V_CL= MAF_V[locs]
-calc_load_CL = calc_load[locs]
-AF_learning_CL = AF_learning[locs]
-AF_corr_CL = AF_corr[locs]
-CL_AFR_CL = CL_AFR[locs]
-#initialize OL data
-locs = np.where(CL_Sw == 'off')
-AFR_OL = AFR[locs]
-comm_AFR_OL = comm_AFR[locs]
-MAF_Corr_OL = MAF_Corr[locs]
-MAF_V_OL = MAF_V[locs]
+init()
 window_width = 0
 window_height = 0
 button_pos = []
