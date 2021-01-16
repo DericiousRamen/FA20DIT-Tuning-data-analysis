@@ -3,14 +3,14 @@ in no particular order.
 
 *** always need to work on improving documentation ***
 (1) Make the GUI more usable:
-    (a) add submenus for all of the options
+    **(a) add submenus for all of the options**
     (b) add some short descriptions of what the different plotting
         functions are.
     (c) eventually add the ability for user defined operations from the GUI
     (d) prototype (c) in the CLI first
 
 (2) New functions
-    (a) improve the knock detection algorithm to make use of the FKL (fine knock learning) as well
+    **(a) improve the knock detection algorithm to make use of the FKL (fine knock learning) as well**
     (b) improve the knock detection algorithm to also show knock relative frequency, which we will want to
         minimize
     (c) Determine when knock is occurring:
@@ -22,21 +22,26 @@ in no particular order.
     (d) Include a function that takes in standard values/map data from COBB AccessTuner and suggest edits/improvements
         based on the given current data. Need to start keeping information on different iterations of tune and
         corresponding logfiles
-    (e) create seperate routine to consolidate data into single csv files per iteration of tune for (d)
-    (f) create functionality to let user do said csv file creation
+          (i) **start organizing filesystem for differing tune versions**
+    (e) **create seperate routine to consolidate data into single csv files per iteration of tune for (d)** unneeded
+    (f) **create functionality to let user do said csv file creation**
     (g) come up with new data filtering techniques to remove common noise/ highly repetative condition. Basically prune
         out highly replicated data to save storage space
+          (i) might not be a good idea, need to think about this more
     (h) look at parameter values in AccessTuner, to determine to state space and use to decide when the given logfiles
         are a good representation of all possible driving conditions (ie span at least a wide range of load, RPM,
         and varying temperature values)
+          (i) for now, importing values are necessarily a manual process using excel or something similar
     (i) Perform some modular operation between varying log files to find common underlying noise (Kalmann
     filtering) to determine what is environmental and sensor based noises
-    (j) Add injector/waste gate duty cycle frequency plots (to ensure that we are not hitting any hardware limits)
+          (i) this is going to be very complicated, need to sort data where they are the same and analyze differences, may require a lot of data
+    **(j) Add injector/waste gate duty cycle frequency plots (to ensure that we are not hitting any hardware limits)**
+    (k) create a CSV parsing algorithm that changes the last entry in the first line to prevent pandas from throwing that goddamn error
 
 (3) Technical Changes
-    (a) Make datatypes more modular for parsing (ie make a class that has the properties close/open loop at least)
+    **(a) Make datatypes more modular for parsing (ie make a class that has the properties close/open loop at least)**
     (b) separate more stuff in modules if possible
-    (c) figure out a different GUI module (maybe)? or work on my as it is. It kinda suck at the moment
+    (c) figure out a different GUI module (maybe)? or work on my as it is. It kinda sucks at the moment
     (d)
 
 

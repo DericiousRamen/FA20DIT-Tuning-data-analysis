@@ -6,20 +6,27 @@ import pickle
 def CL_MAF_calibration(AF_learning, AF_corr, MAF_Corr, MAF_V, calc_load, CL_Sw, AFR, comm_AFR, CL_AFR):
     total_fuel_trim = AF_learning + AF_corr
 
-    fig, axs = plt.subplots(2,2)
+    fig, axs = plt.subplots(1,1)
     #plot1= plt.figure(1)
-    axs[0,0].plot(AF_learning, label = 'AF Learning')
-    axs[0,0].plot(AF_corr, label = 'AF Correction')
-    axs[0,0].plot(total_fuel_trim, label = 'fuel trim (%)')
-    axs[0,0].set(ylabel='fuel trim')
-    axs[0,0].legend()
-    axs[0,0].set_title("AF ratios vs time")
-
+    axs.plot(AF_learning, label = 'AF Learning')
+    axs.plot(AF_corr, label = 'AF Correction')
+    axs.plot(total_fuel_trim, label = 'fuel trim (%)')
+    axs.set(ylabel='fuel trim')
+    axs.legend()
+    axs.set_title("AF ratios vs time")
+    with open('CL_fuel_trim.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
     #plot2= plt.figure(2)
-    axs[0,1].scatter(MAF_V, MAF_Corr, s=.05, alpha = .3)
-    axs[0,1].set(xlabel = "MAF Voltage",ylabel='MAF (g/s)')
-    axs[0,1].set_title('MAF calibrations')
-
+    fig, axs = plt.subplots(1,1)
+    axs.scatter(MAF_V, MAF_Corr, s=.05, alpha = .3)
+    axs.set(xlabel = "MAF Voltage",ylabel='MAF (g/s)')
+    axs.set_title('MAF calibrations')
+    with open('CL_MAF_raw.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
     #it would be interesting to compare closed loop fuel targets vs actual AFR
     # axs[2,1].scatter(AFR,comm_AFR, s = .05, alpha = .4)
     # axs[2,1].plot([11,15],[11,15])
@@ -42,10 +49,14 @@ def CL_MAF_calibration(AF_learning, AF_corr, MAF_Corr, MAF_V, calc_load, CL_Sw, 
     #print(total_fuel_trim)
     #find = np.where(MAF_V == .96)
     #plot3 = plt.figure(3)
-    axs[1,0].scatter(MAF_V, total_fuel_trim, s = .05, alpha = .3)
-    axs[1,0].set(xlabel = 'MAF Voltage',ylabel="fuel trim (%)")
-    axs[1,0].set_title('MAF voltage vs fuel trim')
-
+    fig, axs = plt.subplots(1,1)
+    axs.scatter(MAF_V, total_fuel_trim, s = .05, alpha = .3)
+    axs.set(xlabel = 'MAF Voltage',ylabel="fuel trim (%)")
+    axs.set_title('MAF voltage vs fuel trim')
+    with open('CL_MAF_fuel.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
 
     maf_correction_new =np.array([MAF_V, total_fuel_trim])
     #print(maf_correction_new)
@@ -77,10 +88,11 @@ def CL_MAF_calibration(AF_learning, AF_corr, MAF_Corr, MAF_V, calc_load, CL_Sw, 
     #print(offsets)
     offsets = np.array(offsets)
     #plot4 = plt.figure(4)
-    axs[1,1].plot(offsets[:,0],offsets[:,1])
-    axs[1,1].set(xlabel='MAF Voltage', ylabel = 'offset (%)')
-    axs[1,1].set_title("Desired Offsets")
-    with open('CL_maf.pkl','wb') as fid:
+    fig, axs = plt.subplots(1,1)
+    axs.plot(offsets[:,0],offsets[:,1])
+    axs.set(xlabel='MAF Voltage', ylabel = 'offset (%)')
+    axs.set_title("Desired Offsets")
+    with open('CL_MAF_offsets.pkl','wb') as fid:
         pickle.dump(axs, fid)
     plt.cla()   # Clear axis
     plt.clf()   # Clear figure
@@ -90,16 +102,23 @@ def OL_MAF_calibration(AFR, comm_AFR, MAF_Corr, MAF_V):
     dAFR = np.divide(AFR,comm_AFR) #compute the ratio to find the multiplier for the change required to MAF
 
 
-    fig, axs = plt.subplots(2,2)
-    axs[0,0].plot(dAFR)
-    axs[0,0].set(xlabel = 'time', ylabel='Desired MAF correction (%)')
-    axs[0,0].set_title('Desired MAF correction vs time')
+    fig, axs = plt.subplots(1,1)
+    axs.plot(dAFR)
+    axs.set(xlabel = 'time', ylabel='Desired MAF correction (%)')
+    axs.set_title('Desired MAF correction vs time')
+    with open('OL_MAF_time.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
 
-
-    axs[1,0].scatter(MAF_V, dAFR, s = .05, alpha = .3)
-    axs[1,0].set(xlabel = 'MAF Voltage (V)', ylabel = 'Desired change (%)')
-    axs[1,0].set_title('Desired MAF change raw')
-
+    fig,axs = plt.subplots(1,1)
+    axs.scatter(MAF_V, dAFR, s = .05, alpha = .3)
+    axs.set(xlabel = 'MAF Voltage (V)', ylabel = 'Desired change (%)')
+    axs.set_title('Desired MAF change raw')
+    with open('OL_MAF_raw.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
 
     maf_v_dafr = np.array([MAF_V, dAFR])
     #print(maf_v_dafr)
@@ -128,9 +147,10 @@ def OL_MAF_calibration(AFR, comm_AFR, MAF_Corr, MAF_V):
     avg_offsets.remove([0,0])
     avg_offsets = np.array(avg_offsets)
     #print(avg_offsets)
-    axs[0,1].plot(avg_offsets[:,0],avg_offsets[:,1])
-    axs[0,1].set(xlabel="MAF Voltage", ylabel= 'MAF offset (&)')
-    axs[0,1].set_title('MAF Correction multiplier for open loop fueling')
+    fig,axs = plt.subplots(1,1)
+    axs.plot(avg_offsets[:,0],avg_offsets[:,1])
+    axs.set(xlabel="MAF Voltage", ylabel= 'MAF offset (&)')
+    axs.set_title('MAF Correction multiplier for open loop fueling')
     #this is meaningless
     #axs[1,1].plot(comm_AFR,label= 'Commanded AFR')
     #axs[1,1].plot(AFR, label = 'Actual AFR')
@@ -138,7 +158,7 @@ def OL_MAF_calibration(AFR, comm_AFR, MAF_Corr, MAF_V):
     #axs[1,1].legend()
     #axs[1,1].set(xlabel = 'time', ylabel = 'AFR')
     #plt.show(block = False)
-    with open('OL_maf.pkl','wb') as fid:
+    with open('OL_MAF_desired.pkl','wb') as fid:
         pickle.dump(axs, fid)
     plt.cla()   # Clear axis
     plt.clf()   # Clear figure
@@ -174,7 +194,6 @@ def MAF_calibration_interp(AF_learning, AF_corr, offsets, avg_offsets,CL_Sw):
     #plt.show(block = False)
     plt.cla()   # Clear axis
     plt.clf()   # Clear figure
-
 def fuel_trim_distribution(AF_learning, AF_corr):
     trim = AF_learning + AF_corr
     trim = np.sort(trim) #sort the combined trims
@@ -217,20 +236,14 @@ def fuel_trim_distribution(AF_learning, AF_corr):
     plt.clf()   # Clear figure
 
 def knock_3d(fb_knock, gear, RPM , load, DAM):
-
-
     locs = np.where(fb_knock < -2.) #large signal relative
     loc_DAM = np.where(DAM < 1.) #also want to find where DAM is low triggered
-
     locs_DAM_filtered = []
     for loc in np.array(loc_DAM[0]): #need to do this weird filter to DAM
         if DAM[loc-1] > DAM[loc]: #DAM drop
             locs_DAM_filtered.append((range(loc-10,loc+10)))#take some frame
-
-
     #there is some bug where if there is no knock, then this program crashes.....
     #i'm not quite sure what is causing this problem, well fuck
-
     locs_DAM_filtered = np.array(locs_DAM_filtered)
     locs = np.append(locs, locs_DAM_filtered)
     fb_knock = fb_knock[locs]
@@ -238,7 +251,6 @@ def knock_3d(fb_knock, gear, RPM , load, DAM):
     RPM = RPM[locs]
     load = load[locs ]
     #this filter still isn't good enough. Mainly because if there is knock when DAM is returning, we only care about knock that causes DAM to drop
-
     if fb_knock.size == 0:
         print('there is no knock')
     else:
@@ -282,3 +294,113 @@ def knock_3d(fb_knock, gear, RPM , load, DAM):
         #plt.show(block = False)
         plt.cla()   # Clear axis
         plt.clf()   # Clear figure
+def data_distribution(load_cl, load_ol, rpm_cl, rpm_ol): #these are for generating differing plots
+
+    fig, axs = plt.subplots(1,1)
+    axs.scatter(load_cl, rpm_cl, s= 0.05, alpha = .3)
+    axs.set(xlabel = 'Calculated Load (g/rev)', ylabel = 'RPM (RPM)')
+    axs.set_title('Closed Loop Load vs RPM distribution')
+    with open('cl_load_rpm_dist.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
+
+    fig, axs = plt.subplots(1,1)
+    axs.scatter(load_ol, rpm_ol, s= 0.05, alpha = .3)
+    axs.set(xlabel = 'Calculated Load (g/rev)', ylabel = 'RPM (RPM)')
+    axs.set_title('Open Loop Load vs RPM distribution')
+    with open('ol_load_rpm_dist.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
+def fkl_3d(fkl, load,RPM): #raw fine knock learn data plotted in 3d
+    locs = np.where(fkl != 0.0)
+    fkl = fkl[locs]
+    load = load[locs]
+    RPM = RPM[locs]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    ax.scatter(load,RPM,fkl,s=4)
+    ax.set_xlabel('Calculated Load (g/rev)')
+    ax.set_ylabel('RPM (RPM)')
+    ax.set_zlabel('Fine knock learn')
+    plt.title('FKL vs Load and RPM')
+    with open('fkl_dist.pkl','wb') as fid:
+        pickle.dump(ax, fid)
+    #plt.show(block = False)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
+
+def duty_cycles(inj_duty,wst_duty):
+    #make corresponding histograms
+    frequencies = {}
+    for x in inj_duty:
+        if x in frequencies:
+            frequencies[x] += 1
+        else:
+            frequencies[x] = 1
+    #frequencies = np.array(frequencies.items())
+    values = frequencies.keys()
+    freqs = frequencies.values()
+
+    #weighted sum of square of distances
+    var = 0
+    total = len(inj_duty)
+    avg = np.sum(inj_duty)/len(inj_duty)
+    for key in frequencies.keys():
+        freq = frequencies[key] #find the number
+        var += ((avg - key)**2)*(freq/total)
+    print(np.sqrt(var))
+    fig, axs = plt.subplots(1,1)
+    axs.bar(values, freqs)
+    axs.bar(avg,[5000], color = 'red', label = 'Mean',width = .3)
+    axs.bar([avg-var, avg+var], [500,500], color = 'green', label = 'variance',width = .3)
+    axs.bar([avg-2*var, avg+2*var], [300,300], color = 'orange', label = '2*variance',width = .3)
+    axs.bar([avg-3*var, avg+3*var], [200,200], color = 'pink', label = '3*variance',width = .3)
+    axs.legend()
+    axs.set_xlabel('Injector Duty Cycle (%)')
+    axs.set_ylabel('Frequency')
+    axs.set_title("Distribution of Injector Duty Cycle")
+    with open('inj_duty_cycle.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    #plt.show(block = False)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure
+
+
+
+    frequencies = {}
+
+    for x in wst_duty:
+        if x in frequencies:
+            frequencies[x] += 1
+        else:
+            frequencies[x] = 1
+    #frequencies = np.array(frequencies.items())
+    values = frequencies.keys()
+    freqs = frequencies.values()
+    #weighted sum of square of distances
+    var = 0
+    total = len(wst_duty)
+    avg = np.sum(wst_duty)/len(wst_duty)
+    for key in frequencies.keys():
+        freq = frequencies[key] #find the number
+        var += ((avg - key)**2)*(freq/total)
+    print(np.sqrt(var))
+    fig, axs = plt.subplots(1,1)
+    axs.bar(values, freqs)
+    axs.bar(avg,[5000], color = 'red', label = 'Mean',width = .3)
+    axs.bar([avg-var, avg+var], [500,500], color = 'green', label = 'variance',width = .3)
+    axs.bar([avg-2*var, avg+2*var], [300,300], color = 'orange', label = '2*variance',width = .3)
+    axs.bar([avg-3*var, avg+3*var], [200,200], color = 'pink', label = '3*variance',width = .3)
+    axs.legend()
+    axs.set_xlabel('Wastegate Duty Cycle (%)')
+    axs.set_ylabel('Frequency')
+    axs.set_title("Distribution of Wastegate Duty Cycle")
+    with open('wst_duty_cycle.pkl','wb') as fid:
+        pickle.dump(axs, fid)
+    #plt.show(block = False)
+    plt.cla()   # Clear axis
+    plt.clf()   # Clear figure

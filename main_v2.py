@@ -14,7 +14,6 @@
 #       RPM (RPM)
 
 #should add some stuff using DAM next to filter the knock events more We do not want any DAM
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -48,7 +47,7 @@ class Button:#a button with some properties that are nice
         kwargs_box = {'x' :x_box, 'y' : y_box,'width':button_width, 'height' : button_height, 'color':color, 'batch': batch, 'group' : group}
         self.box = pyglet.shapes.Rectangle(**kwargs_box)
         self.box.opacity = 100
-        label_kwargs = {'font_name': 'Monospace', 'font_size':(size/1080)*window_height, 'x' : window_width*.5,'y':window_height*rel_loc,
+        label_kwargs = {'font_name': 'Monospace', 'font_size':(size/1920)*window_width, 'x' : window_width*.5,'y':window_height*rel_loc,
                     'anchor_x':'center', 'anchor_y':'center', 'batch':batch, 'group':text_group,'color':(0,0,0,255) }
         self.label = pyglet.text.Label(name, **label_kwargs)
 
@@ -57,6 +56,12 @@ def init():
     global data_set
     #get logfile name --> import file
     logs = []
+
+    os.chdir('./Datalogs/')
+    print("Please choose which version from following list")
+    os.system('dir')
+    ver = input()
+    os.chdir('./'+ver)
     #make array of dataframes
     for file in glob.glob("*.csv"):
         temp = pd.DataFrame(pd.read_csv(file, sep = ',', header = 0))
@@ -82,7 +87,8 @@ def init():
                     "MAF Volts (V)", "Calculated Load (g/rev)", "Closed Loop Sw (on/off)",
                       "AF Sens 1 Ratio (AFR)", "Comm Fuel Final (AFR)",
                       "CL Fuel Target (AFR)", "Feedback Knock (�)",
-                      "Gear Position (Gear)", "RPM (RPM)", "Dyn Adv Mult (DAM)"]
+                      "Gear Position (Gear)", "RPM (RPM)", "Dyn Adv Mult (DAM)","Fine Knock Learn (�)",
+                      "Inj Duty Cycle (%)","Wastegate Duty (%)"]
     params = logfile.columns.values.tolist()
 
     for param in desired_params:
@@ -109,7 +115,8 @@ window_height = 0
 button_pos = []
 
 CL_args = [data_set.data["AF Learning 1 (%)"].clData, data_set.data["AF Correction 1 (%)"].clData,
-                data_set.data["MAF Corr (g/s)"].clData, data_set.data["MAF Volts (V)"].clData, data_set.data["Calculated Load (g/rev)"].clData,
+                data_set.data["MAF Corr (g/s)"].clData, data_set.data["MAF Volts (V)"].clData,
+                 data_set.data["Calculated Load (g/rev)"].clData,
                 data_set.data["Closed Loop Sw (on/off)"].rawData, data_set.data["AF Sens 1 Ratio (AFR)"].clData,
                  data_set.data["Comm Fuel Final (AFR)"].clData, data_set.data["CL Fuel Target (AFR)"].clData]
 OL_args = [data_set.data["AF Sens 1 Ratio (AFR)"].olData, data_set.data["Comm Fuel Final (AFR)"].olData, data_set.data["MAF Corr (g/s)"].olData,
@@ -121,19 +128,26 @@ knock_args = [data_set.data["Feedback Knock (�)"].rawData, data_set.data["Gear
 
 offset_CL = manipulations.CL_MAF_calibration(*CL_args)
 offset_OL  = manipulations.OL_MAF_calibration(*OL_args)
+#want to make plots of where the data is in load/RPM state space
+manipulations.data_distribution(data_set.data["Calculated Load (g/rev)"].clData, data_set.data["Calculated Load (g/rev)"].olData,
+                                data_set.data["RPM (RPM)"].clData, data_set.data["RPM (RPM)"].olData)
+
 
 calib_args = [data_set.data["AF Learning 1 (%)"].rawData, data_set.data["AF Correction 1 (%)"].rawData, offset_CL, offset_OL,
                 data_set.data["Closed Loop Sw (on/off)"].rawData]
 manipulations.MAF_calibration_interp(*calib_args)
 manipulations.fuel_trim_distribution(*AF_args_raw)
 manipulations.knock_3d(*knock_args)
+manipulations.fkl_3d(data_set.data["Fine Knock Learn (�)"].rawData, data_set.data["Calculated Load (g/rev)"].rawData,
+                        data_set.data["RPM (RPM)"].rawData)
+manipulations.duty_cycles(data_set.data["Inj Duty Cycle (%)"].rawData, data_set.data["Wastegate Duty (%)"].rawData)
 
 def update_gui():
 
     global window_height, window_width, button_pos,button_width, button_height
-    global running,lst,state
+    global running,lst,state,num_buttons
     window_width = 600
-    window_height = 800
+    window_height = 1000
     window = pyglet.window.Window(width = window_width, height = window_height)
     window.config.alpha_size = 8
     batch = pyglet.graphics.Batch()
@@ -147,34 +161,43 @@ def update_gui():
     button_height = 100
     center_box_x  = window.width*.5 -button_width//2
     #always plot this
-    title = Button(center_box_x, window.height*.9-button_height//2, button_width, button_height,
-            (128,128,128), batch, fg, "Logfile Data Viewer", window.height, window.width, .9, 50,top)
+    title = Button(center_box_x, window.height*.95-button_height//2, button_width, button_height,
+            (128,128,128), batch, fg, "Logfile Data Viewer", window.height, window.width, .95, 100,top)
     title.box.opacity = 255
 
 
     #call this the main screen (i guess)
-    button_pos = [.75,.6,.45,.3,.15]
-    buttons = ["Closed Loop Plots", "Open Loop Plots", "Combined Plots", "Fuel Trim Distribution", "Plot of Knock events"]
-    lst = [None]*5 #need to make this dummy list, we never reference them, so oh well
-    for i in range(5):
+    button_pos = [.82,.70,.58,.46,.34,.22]
+    buttons = ["Closed Loop Plots", "Open Loop Plots", "Combined Plots", "Fuel Trim Distribution", "Plots of Knock events","Data Distribution"]
+    lst = [None]*len(buttons) #need to make this dummy list, we never reference them, so oh well
+    num_buttons = len(buttons)
+    for i in range(len(buttons)):
         lst[i] =Button(center_box_x, window.height*button_pos[i]-button_height//2, button_width, button_height,
-                (128,128,128), batch, fg, buttons[i], window.height, window.width, button_pos[i], 40,top)
+                (128,128,128), batch, fg, buttons[i], window.height, window.width, button_pos[i], 80,top)
 
 
 
     def redraw(): #update labels based off of state
-        global state,lst
+        global state,lst,num_buttons
         if state == "main":
-            labels =  ["Closed Loop Plots", "Open Loop Plots", "Combined Plots", "Fuel Trim Distribution", "Plot of Knock events"]
-            for i in range(5):
+            labels =  ["Closed Loop Plots", "Open Loop Plots", "Combined Plots", "Fuel Trim Distribution", "Plot of Knock events", "Data Distribution"]
+            for i in range(num_buttons):
                 lst[i].label.text = labels[i]
         elif state == "CL Plots":
-            labels = ["Fuel Trims vs Time", 'MAF Calibration Scatter', 'MAF offset Scatter', 'MAF offset avg', 'Back to Menu']
-            for i in range(5):
+            labels = ["Fuel Trims vs Time", 'MAF Calibration Scatter', 'MAF offset Scatter', 'MAF offset avg', 'Back to Menu', '']
+            for i in range(num_buttons):
                     lst[i].label.text = labels[i]
         elif state == "OL Plots":
-            labels = ["MAF offset scatter", 'MAF Off set avg', '', '', 'Back to Menu']
-            for i in range(5):
+            labels = ["MAF offset vs time", "MAF offset scatter", 'MAF Off set avg', '', 'Back to Menu','']
+            for i in range(num_buttons):
+                    lst[i].label.text = labels[i]
+        elif state == "Data Distribution":
+            labels = ["Closed Loop Data", "Open Loop Data", 'Injector Duty Cycle Avg', 'Wastegate Duty Cycle Avg', 'Back to Menu', '']
+            for i in range(num_buttons):
+                    lst[i].label.text = labels[i]
+        elif state == "knock plots":
+            labels = ["3d knock events", "3d Fine Knock Learn", '', '', 'Back to Menu', '']
+            for i in range(num_buttons):
                     lst[i].label.text = labels[i]
 
     @window.event
@@ -225,28 +248,27 @@ def update_gui():
                         plt.show()
                         print('print figure')
                     elif i == 4:
-                        with open('knock.pkl','rb') as fid:
-                            ax = pickle.load(fid)
-                        plt.show()
-                        print('print figure')
+                        state = "knock plots"
+                    elif i == 5:
+                        state = "Data Distribution"
                 elif state == "CL Plots":
                     if i == 0:
-                        with open('CL_maf.pkl','rb') as fid:
+                        with open('CL_fuel_trim.pkl','rb') as fid:
                             ax = pickle.load(fid)
                         plt.show()
                         print('print figure')
                     elif i == 1:
-                        with open('CL_maf.pkl','rb') as fid:
+                        with open('CL_MAF_raw.pkl','rb') as fid:
                             ax = pickle.load(fid)
                         plt.show()
                         print('print figure')
                     elif i == 2:
-                        with open('CL_maf.pkl','rb') as fid:
+                        with open('CL_MAF_fuel.pkl','rb') as fid:
                             ax = pickle.load(fid)
                         plt.show()
                         print('print figure')
                     elif i == 3:
-                        with open('CL_maf.pkl','rb') as fid:
+                        with open('CL_MAF_offsets.pkl','rb') as fid:
                             ax = pickle.load(fid)
                         plt.show()
                         print('print figure')
@@ -254,21 +276,20 @@ def update_gui():
                         state = "main"
                 elif state == "OL Plots":
                     if i == 0:
-                        with open('OL_maf.pkl','rb') as fid:
+                        with open('OL_MAF_time.pkl','rb') as fid:
                             ax = pickle.load(fid)
                         plt.show()
                         print('print figure')
                     elif i == 1:
-                        with open('OL_maf.pkl','rb') as fid:
+                        with open('OL_MAF_raw.pkl','rb') as fid:
                             ax = pickle.load(fid)
                         plt.show()
                         print('print figure')
                     elif i == 2:
-                        #with open('OL_maf.pkl','rb') as fid:
-                        #    ax = pickle.load(fid)
-                        #plt.show()
-                        #print('print figure')
-                        print('nothing to print')
+                        with open('OL_MAF_desired.pkl','rb') as fid:
+                            ax = pickle.load(fid)
+                        plt.show()
+                        print('print figure')
                     elif i == 3:
                         #with open('OL_maf.pkl','rb') as fid:
                         #    ax = pickle.load(fid)
@@ -277,6 +298,52 @@ def update_gui():
                         print('nothing to print')
                     elif i == 4:
                         state = "main"
+                elif state == "Data Distribution":
+                    if i == 0:
+                        #go to CL plotting options
+                        with open('cl_load_rpm_dist.pkl','rb') as fid:
+                            ax = pickle.load(fid)
+                        plt.show()
+                        print('print figure')
+                    elif i==1:
+                        with open('ol_load_rpm_dist.pkl','rb') as fid:
+                            ax = pickle.load(fid)
+                        plt.show()
+                        print('print figure')
+                    elif i ==2:
+                        with open('inj_duty_cycle.pkl','rb') as fid:
+                            ax = pickle.load(fid)
+                        plt.show()
+                        print('print figure')
+                    elif i == 3:
+                        with open('wst_duty_cycle.pkl','rb') as fid:
+                            ax = pickle.load(fid)
+                        plt.show()
+                        print('print figure')
+                    elif i == 4:
+                        state = "main"
+                    elif i == 5:
+                        print('no figure')
+                elif state == "knock plots":
+                    if i == 0:
+                        with open('knock.pkl','rb') as fid:
+                            ax = pickle.load(fid)
+                        plt.show()
+                        print('print figure')
+                    elif i == 1:
+                        with open('fkl_dist.pkl','rb') as fid:
+                            ax = pickle.load(fid)
+                        plt.show()
+                        print('print figure')
+                    elif i == 2:
+                        print('nothing to show')
+                    elif i == 3:
+                        print('nothing to show')
+                    elif i == 4:
+                        state = "main"
+                    elif i == 5:
+                        print('nothing to show')
+
 
         print(state)
         redraw()
@@ -294,7 +361,6 @@ print('press o to exit gui')
 print('started graphics ')
 state = "main"
 update_gui()
-
 
 #plotting_thread.join()
 #this launches all the data manipulations
